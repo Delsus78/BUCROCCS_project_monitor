@@ -25,6 +25,8 @@ class DataDisplay:
                 ft.Text("Temperature", weight=ft.FontWeight.BOLD, expand=1),
                 ft.Text("Light", weight=ft.FontWeight.BOLD, expand=1),
                 ft.Text("Moisture", weight=ft.FontWeight.BOLD, expand=1),
+                ft.Text("Light Activated", weight=ft.FontWeight.BOLD, expand=1),
+                ft.Text("Pump Activated", weight=ft.FontWeight.BOLD, expand=1)
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=10,
@@ -43,7 +45,7 @@ class DataDisplay:
         if hour in response:
             return response
 
-        return {f"{hour}": {"HUMIDITY": 0, "TEMPERATURE": 0, "LIGHT": 0, "MOISTURE": 0}}
+        return {f"{hour}": {"HUMIDITY": 0, "TEMPERATURE": 0, "LIGHT": 0, "MOISTURE": 0, "LIGHTSTATE": 0, "PUMPSTATE": 0}}
 
     async def update_data(self):
         while True:
@@ -66,25 +68,53 @@ class DataDisplay:
     def display_data(self, data):
         self.data_columns.controls.clear()
 
+        # trier les données par heure
+        data = dict(sorted(data.items(), key=lambda x: int(x[0])))
+
         for time, values in data.items():
             is_current_time = time == get_actual_hour()
+
+            humidity = "%.2f" % values['HUMIDITY'] if values.get('HUMIDITY') else 0
+            temperature = "%.2f" % values['TEMPERATURE'] if values.get('TEMPERATURE') else 0
+            light = "%.2f" % values['LIGHT'] if values.get('LIGHT') else 0
+            moisture = "%.2f" % values['MOISTURE'] if values.get('MOISTURE') else 0
+            if values.get('LIGHTSTATE') is not None:
+                light_state = "ON" if values['LIGHTSTATE'] else "OFF"
+                light_state_color = ft.colors.GREEN if values['LIGHTSTATE'] else ft.colors.RED
+            else:
+                light_state = "NONE"
+                light_state_color = ft.colors.GREY
+
+            if values.get('PUMPSTATE') is not None:
+                pump_state = "ON" if values['PUMPSTATE'] else "OFF"
+                pump_state_color = ft.colors.GREEN if values['PUMPSTATE'] else ft.colors.RED
+            else:
+                pump_state = "NONE"
+                pump_state_color = ft.colors.GREY
+
             row = ft.Row(
                 [
                     ft.Text(f"{time} H", expand=1, color=ft.colors.WHITE,
                             weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
                             size=16 if is_current_time else 14),
-                    ft.Text(f"{values['HUMIDITY']} %",expand=1, color=ft.colors.WHITE,
+                    ft.Text(f"{humidity} %",expand=1, color=ft.colors.WHITE,
                             weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
                             size=16 if is_current_time else 14),
-                    ft.Text(f"{values['TEMPERATURE']} °C",expand=1, color=ft.colors.WHITE,
+                    ft.Text(f"{temperature} °C",expand=1, color=ft.colors.WHITE,
                             weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
                             size=16 if is_current_time else 14),
-                    ft.Text(f"{values['LIGHT']} %",expand=1, color=ft.colors.WHITE,
+                    ft.Text(f"{light} %",expand=1, color=ft.colors.WHITE,
                             weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
                             size=16 if is_current_time else 14),
-                    ft.Text(f"{values['MOISTURE']} %",expand=1, color=ft.colors.WHITE,
+                    ft.Text(f"{moisture} %",expand=1, color=ft.colors.WHITE,
                             weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
                             size=16 if is_current_time else 14),
+                    ft.Text(light_state, expand=1, color=light_state_color,
+                            weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
+                            size=16 if is_current_time else 14),
+                    ft.Text(pump_state, expand=1, color=pump_state_color,
+                            weight=ft.FontWeight.BOLD if is_current_time else ft.FontWeight.NORMAL,
+                            size=16 if is_current_time else 14)
                 ],
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=10
