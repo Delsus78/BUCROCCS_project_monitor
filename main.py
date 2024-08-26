@@ -26,7 +26,8 @@ class DataDisplay:
                 ft.Text("Light", weight=ft.FontWeight.BOLD, expand=1),
                 ft.Text("Moisture", weight=ft.FontWeight.BOLD, expand=1),
                 ft.Text("Light Activated", weight=ft.FontWeight.BOLD, expand=1),
-                ft.Text("Pump Activated", weight=ft.FontWeight.BOLD, expand=1)
+                ft.Text("Pump Activated", weight=ft.FontWeight.BOLD, expand=1),
+                ft.Text("Pump Activated This Hour", weight=ft.FontWeight.BOLD, expand=1),
             ],
             alignment=ft.MainAxisAlignment.CENTER,
             spacing=10,
