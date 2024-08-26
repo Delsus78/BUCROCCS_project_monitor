@@ -1,7 +1,7 @@
 import flet as ft
 import asyncio
 
-from Helpers.TimeHelpers import get_actual_day, get_actual_hour
+from Helpers.TimeHelpers import get_actual_day, get_actual_hour, get_actual_day_as_int, get_actual_day_from_int
 from UdpClient import UdpClient
 
 
@@ -10,13 +10,40 @@ class DataDisplay:
         self.progress_bar = ft.ProgressBar(width=200)
         self.data_columns = ft.Column(spacing=5)
         self.page = page
+        self.day = get_actual_day()
         self.client_udp = UdpClient(server_ip='udpserver.bu.ac.th', server_port=5005)
         self.create_layout()
+
+    async def change_day(self, event):
+        day_index = int(event.data)
+        day = get_actual_day_from_int(day_index)
+
+        self.day = day
+        await self.update_data()
 
     def create_layout(self):
         self.page.title = "Data Display"
         self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
         self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+
+        # create a tab for selecting the day
+        tabOfDays = ft.Tabs(
+            selected_index=get_actual_day_as_int() - 1,
+            animation_duration=300,
+            tabs=[
+                ft.Tab(text="Monday"),
+                ft.Tab(text="Tuesday"),
+                ft.Tab(text="Wednesday"),
+                ft.Tab(text="Thursday"),
+                ft.Tab(text="Friday"),
+                ft.Tab(text="Saturday"),
+                ft.Tab(text="Sunday")
+            ],
+            expand=1
+        )
+
+        # add a callback to the tab
+        tabOfDays.on_change = self.change_day
 
         self.header = ft.Row(
             [
@@ -33,13 +60,16 @@ class DataDisplay:
             spacing=10,
         )
 
+        self.page.add(ft.Container(tabOfDays, padding=10, border_radius=5, bgcolor=ft.colors.BLUE_GREY))
         self.page.add(ft.Container(self.header, padding=10, bgcolor=ft.colors.BLUE_GREY_900, border_radius=5))
         self.page.add(ft.Container(self.data_columns, padding=10, border_radius=5, bgcolor=ft.colors.BLUE_GREY_800))
         self.page.add(ft.Container(self.progress_bar, padding=10))
         self.page.update()
 
     async def retrieve_data(self):
-        id_str = f"farm2000_" + str(get_actual_day())
+        daySelected = self.day
+
+        id_str = f"farm2000_" + str(daySelected)
         response = await self.client_udp.retrieve_data(command="GET", id_str=id_str)
         hour = get_actual_hour()
 
@@ -49,14 +79,17 @@ class DataDisplay:
         return {f"{hour}": {"HUMIDITY": 0, "TEMPERATURE": 0, "LIGHT": 0, "MOISTURE": 0, "LIGHTSTATE": False, "PUMPSTATE": False, "PUMPWASACTIVATEDTHISHOUR": False}}
 
     async def update_data(self):
+        response = await self.retrieve_data()
+
+        # Réinitialiser la barre de progression
+        self.progress_bar.value = 1
+
+        self.display_data(response)
+
+    async def loop_data(self):
         while True:
             try:
-                response = await self.retrieve_data()
-
-                # Réinitialiser la barre de progression
-                self.progress_bar.value = 1
-
-                self.display_data(response)
+                await self.update_data()
             except Exception as e:
                 print(f"Error retrieving data: {e}")
 
@@ -73,7 +106,7 @@ class DataDisplay:
         data = dict(sorted(data.items(), key=lambda x: int(x[0])))
 
         for time, values in data.items():
-            is_current_time = time == get_actual_hour()
+            is_current_time = time == get_actual_hour() and get_actual_day() == self.day
 
             humidity = "%.2f" % values['HUMIDITY'] if values.get('HUMIDITY') else 0
             temperature = "%.2f" % values['TEMPERATURE'] if values.get('TEMPERATURE') else 0
@@ -136,6 +169,6 @@ class DataDisplay:
 
 async def main(page: ft.Page):
     data_display = DataDisplay(page)
-    await data_display.update_data()
+    await data_display.loop_data()
 
 ft.app(target=main)
