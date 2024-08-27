@@ -73,7 +73,7 @@ class DataDisplay:
         response = await self.client_udp.retrieve_data(command="GET", id_str=id_str)
         hour = get_actual_hour()
 
-        if hour in response:
+        if response:
             return response
 
         return {f"{hour}": {"HUMIDITY": 0, "TEMPERATURE": 0, "LIGHT": 0, "MOISTURE": 0, "LIGHTSTATE": False, "PUMPSTATE": False, "PUMPWASACTIVATEDTHISHOUR": False}}
